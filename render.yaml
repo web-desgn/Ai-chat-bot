@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: dental-chatbot
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false        # Main AI (free). Render asks you to paste the key. It is never stored in GitHub.
+      - key: GEMINI_API_KEY
+        sync: false        # Optional backup AI. Can be left empty.
+      - key: TRUST_PROXY
+        value: "1"
+      - key: NODE_VERSION
+        value: "22"
