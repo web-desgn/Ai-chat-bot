@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Rachel S Perez, DMD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --cream: #FAF6F0;
+    --cream-soft: #F2ECE2;
+    --pine: #1F3D36;
+    --pine-deep: #142822;
+    --coral: #E8836B;
+    --coral-soft: #F3B9A6;
+    --text: #3A352E;
+    --muted: #8A8276;
+    --line: rgba(31,61,54,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--cream-soft);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 6%; }
+
+  h1, h2, h3 { font-family: 'Fraunces', serif; color: var(--pine-deep); }
+
+  /* ---- top bar ---- */
+  .topbar {
+    background: rgba(250,246,240,0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 20;
+  }
+
+  .topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 0;
+  }
+
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 19px;
+    color: var(--pine);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .logo svg { width: 23px; height: 23px; }
+
+  .admin-tag {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    background: var(--pine);
+    color: var(--cream);
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+
+  .back-link {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    transition: color 0.2s ease;
+  }
+
+  .back-link:hover { color: var(--pine); }
+  .back-link svg { width: 16px; height: 16px; }
+
+  /* ---- header ---- */
+  .page-head { padding: 44px 0 30px; }
+  .page-head h1 { font-size: 32px; margin-bottom: 8px; }
+  .page-head p { color: var(--muted); font-size: 15px; max-width: 560px; }
+
+  .demo-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    font-size: 12.5px;
+    color: var(--muted);
+    background: var(--cream);
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    border-radius: 20px;
+  }
+
+  .demo-note span.dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--coral); flex: none;
+  }
+
+  /* ---- stats ---- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px 24px;
+  }
+
+  .stat-card .num {
+    font-family: 'Fraunces', serif;
+    font-size: 30px;
+    color: var(--pine-deep);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-card .label {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---- toolbar ---- */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .filter-tab {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    border-radius: 20px;
+    background: var(--cream);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .filter-tab.active { background: var(--pine); color: var(--cream); border-color: var(--pine); }
+  .filter-tab:hover:not(.active) { border-color: var(--pine); color: var(--pine); }
+
+  .clear-btn {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    border-radius: 20px;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: #C1503B;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .clear-btn:hover { background: rgba(193,80,59,0.08); }
+
+  /* ---- table / cards ---- */
+  .appt-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 60px; }
+
+  .appt-card {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1.2fr 1fr auto;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .appt-name { font-weight: 700; color: var(--pine-deep); font-size: 15px; margin-bottom: 3px; }
+  .appt-sub { font-size: 12.5px; color: var(--muted); }
+
+  .appt-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .appt-field-value { font-size: 14px; color: var(--text); }
+  .appt-message {
+    font-size: 13.5px;
+    color: var(--text);
+    max-width: 260px;
+    max-height: 60px;
+    overflow-y: auto;
+    line-height: 1.4;
+  }
+  .appt-message.empty { color: var(--muted); font-style: italic; }
+
+  .appt-actions { display: flex; align-items: center; gap: 10px; }
+
+  .status-select {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 7px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--cream-soft);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .status-select[data-status="new"] { color: var(--coral); border-color: var(--coral-soft); }
+  .status-select[data-status="contacted"] { color: var(--pine); }
+  .status-select[data-status="completed"] { color: var(--muted); }
+
+  .del-btn {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--cream-soft);
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    flex: none;
+  }
+  .del-btn:hover { background: rgba(193,80,59,0.1); color: #C1503B; }
+  .del-btn svg { width: 15px; height: 15px; }
+
+  .empty-state {
+    background: var(--cream);
+    border: 1px dashed var(--line);
+    border-radius: 20px;
+    padding: 60px 30px;
+    text-align: center;
+    margin-bottom: 60px;
+  }
+
+  .empty-state svg { width: 40px; height: 40px; stroke: var(--muted); margin-bottom: 16px; }
+  .empty-state h3 { font-size: 19px; margin-bottom: 8px; }
+  .empty-state p { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+
+  .empty-state a {
+    display: inline-block;
+    background: var(--pine);
+    color: var(--cream);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 11px 22px;
+    border-radius: 30px;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .empty-state a:hover { background: var(--pine-deep); transform: translateY(-2px); }
+
+  @media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .appt-card { grid-template-columns: 1fr; gap: 12px; }
+    .appt-actions { justify-content: space-between; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-3-2-5-5.5-5-10a5 5 0 0 1 10 0c0 4.5-2 8-5 10Z"/><path d="M9 9.5c0 3 1 5 3 7"/></svg>
+      Dr. Rachel Perez, DMD
+      <span class="admin-tag">Admin</span>
+    </div>
+    <a class="back-link" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+      Back to site
+    </a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>Appointment Requests</h1>
+    <p>Every request submitted through the booking form on the website shows up here automatically.</p>
+    <div class="demo-note"><span class="dot"></span>Demo panel — data is stored only in this browser (no backend, no login).</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="num" id="statTotal">0</div><div class="label">Total requests</div></div>
+    <div class="stat-card"><div class="num" id="statNew">0</div><div class="label">New</div></div>
+    <div class="stat-card"><div class="num" id="statContacted">0</div><div class="label">Contacted</div></div>
+    <div class="stat-card"><div class="num" id="statCompleted">0</div><div class="label">Completed</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-tabs" id="filterTabs">
+      <button type="button" class="filter-tab active" data-filter="all">All</button>
+      <button type="button" class="filter-tab" data-filter="new">New</button>
+      <button type="button" class="filter-tab" data-filter="contacted">Contacted</button>
+      <button type="button" class="filter-tab" data-filter="completed">Completed</button>
+    </div>
+    <button type="button" class="clear-btn" id="clearAllBtn">Clear all</button>
+  </div>
+
+  <div class="appt-list" id="apptList"></div>
+
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M8 2v4M16 2v4M3 9h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
+    <h3>No appointment requests yet</h3>
+    <p>Once someone books through the site, their request will appear here.</p>
+    <a href="index.html#booking">Go to booking form</a>
+  </div>
+</div>
+
+<script>
+  // Supabase connection (public/anon key — safe to expose, access is controlled by RLS policies).
+  const SUPABASE_URL = 'https://gvhzsxddfpdnafydwfuc.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_JUtMCmEGto3_ZiNVu8Tedw_uA72Tqoc';
+  const sbClient = (typeof supabase !== 'undefined')
+    ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+  let currentFilter = 'all';
+
+  async function loadAppointments() {
+    if (!sbClient) return [];
+    const { data, error } = await sbClient
+      .from('appointments')
+      .select('*')
+      .order('submitted_at', { ascending: false });
+    if (error) { console.error(error); return []; }
+    return data || [];
+  }
+
+  async function updateStatus(id, status) {
+    if (!sbClient) return;
+    const { error } = await sbClient.from('appointments').update({ status }).eq('id', id);
+    if (error) console.error(error);
+  }
+
+  async function deleteAppointment(id) {
+    if (!sbClient) return;
+    const { error } = await sbClient.from('appointments').delete().eq('id', id);
+    if (error) console.error(error);
+  }
+
+  async function clearAllAppointments() {
+    if (!sbClient) return;
+    const { error } = await sbClient.from('appointments').delete().not('id', 'is', null);
+    if (error) console.error(error);
+  }
+
+  function fmtDateTime(dateStr, timeStr) {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr + 'T' + (timeStr || '00:00'));
+      const dateFmt = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      const timeFmt = timeStr ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '';
+      return dateFmt + (timeFmt ? ' · ' + timeFmt : '');
+    } catch (e) { return dateStr + ' ' + (timeStr || ''); }
+  }
+
+  function fmtSubmitted(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' at ' +
+        d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    } catch (e) { return ''; }
+  }
+
+  async function render() {
+    const list = await loadAppointments();
+
+    document.getElementById('statTotal').textContent = list.length;
+    document.getElementById('statNew').textContent = list.filter(a => a.status === 'new').length;
+    document.getElementById('statContacted').textContent = list.filter(a => a.status === 'contacted').length;
+    document.getElementById('statCompleted').textContent = list.filter(a => a.status === 'completed').length;
+
+    const apptListEl = document.getElementById('apptList');
+    const emptyStateEl = document.getElementById('emptyState');
+    apptListEl.innerHTML = '';
+
+    if (list.length === 0) {
+      emptyStateEl.style.display = 'block';
+      return;
+    }
+    emptyStateEl.style.display = 'none';
+
+    const filtered = currentFilter === 'all' ? list : list.filter(a => a.status === currentFilter);
+
+    if (filtered.length === 0) {
+      const msg = document.createElement('div');
+      msg.className = 'appt-sub';
+      msg.style.padding = '20px 4px';
+      msg.textContent = 'No requests match this filter.';
+      apptListEl.appendChild(msg);
+      return;
+    }
+
+    filtered.forEach(appt => {
+      const card = document.createElement('div');
+      card.className = 'appt-card';
+      card.innerHTML = `
+        <div>
+          <div class="appt-name">${escapeHtml(appt.name || 'Unnamed')}</div>
+          <div class="appt-sub">Age ${escapeHtml(appt.age || '—')} · Submitted ${fmtSubmitted(appt.submitted_at)}</div>
+        </div>
+        <div>
+          <div class="appt-field-label">Email</div>
+          <div class="appt-field-value">${escapeHtml(appt.email || '—')}</div>
+        </div>
+        <div>
+          <div class="appt-field-label">Preferred visit</div>
+          <div class="appt-field-value">${fmtDateTime(appt.date, appt.time)}</div>
+        </div>
+        <div>
+          <div class="appt-field-label">Message</div>
+          <div class="appt-message ${appt.message ? '' : 'empty'}">${appt.message ? escapeHtml(appt.message) : 'No message'}</div>
+        </div>
+        <div class="appt-actions">
+          <select class="status-select" data-status="${appt.status}" data-id="${appt.id}">
+            <option value="new" ${appt.status === 'new' ? 'selected' : ''}>New</option>
+            <option value="contacted" ${appt.status === 'contacted' ? 'selected' : ''}>Contacted</option>
+            <option value="completed" ${appt.status === 'completed' ? 'selected' : ''}>Completed</option>
+          </select>
+          <button type="button" class="del-btn" data-id="${appt.id}" aria-label="Delete request">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+          </button>
+        </div>
+      `;
+      apptListEl.appendChild(card);
+    });
+
+    apptListEl.querySelectorAll('.status-select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        await updateStatus(sel.dataset.id, sel.value);
+        render();
+      });
+    });
+
+    apptListEl.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await deleteAppointment(btn.dataset.id);
+        render();
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+
+  document.getElementById('filterTabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-tab');
+    if (!btn) return;
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+
+  document.getElementById('clearAllBtn').addEventListener('click', async () => {
+    const list = await loadAppointments();
+    if (list.length === 0) return;
+    if (confirm('Delete all appointment requests? This cannot be undone.')) {
+      await clearAllAppointments();
+      render();
+    }
+  });
+
+  render();
+</script>
+</body>
+</html>
